@@ -1,0 +1,95 @@
+name: Publish fork review preview
+
+on:
+  workflow_run:
+    workflows: ['Validate and publish Astro site']
+    types: [completed]
+    branches: ['MHaggis/lolbas-astro-site-build']
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact commit SHA that passed the fork site workflow
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-review-preview
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.repository == 'MHaggis/LOLBAS' &&
+      github.event.repository.fork == true &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      SITE_BASE: /LOLBAS
+      ASTRO_TELEMETRY_DISABLED: '1'
+      REVIEW_REVISION: ${{ github.event.workflow_run.head_sha || inputs.revision }}
+    steps:
+      - name: Require successful validation of the exact review revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$REVIEW_REVISION" =~ ^[0-9a-f]{40}$ ]]
+          count=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow site.yml --branch MHaggis/lolbas-astro-site-build --commit "$REVIEW_REVISION" --event push --status success --json databaseId --jq length)
+          test "$count" -gt 0
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REVIEW_REVISION }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: website
+      - name: Build the project-path preview
+        working-directory: website
+        run: |
+          npm run build
+          printf '%s\n' "$REVIEW_REVISION" > dist/source-revision.txt
+      - run: npx playwright install --with-deps chromium
+        working-directory: website
+      - name: Test the hosted preview paths and interactions
+        run: npm test
+        working-directory: website
+      - name: Upload preview test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fork-preview-browser-evidence
+          path: |
+            website/playwright-report/
+            website/test-results/
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/dist/
+
+  deploy:
+    needs: build
+    if: github.repository == 'MHaggis/LOLBAS' && github.event.repository.fork == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.preview.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: preview
