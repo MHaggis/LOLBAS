@@ -1,12 +1,13 @@
 ---
 import { sitePath } from '../lib/site';
+import GitHubIcon from '../components/GitHubIcon.astro';
 import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
 }
 const {
-  title = 'LOLBAS · Know what’s hiding in plain sight.',
+  title = 'LOLBAS · Living Off The Land Binaries, Scripts and Libraries',
   description = 'Explore Windows binaries, scripts and libraries used in living off the land techniques. Search commands, ATT&CK mappings and detection resources.',
 } = Astro.props;
 ---
@@ -59,7 +60,7 @@ const {
         <a href={sitePath('/about/')}>About</a>
       </nav>
       <a class="repo-link" href="https://github.com/LOLBAS-Project/LOLBAS">
-        GitHub <span aria-hidden="true">↗</span>
+        <GitHubIcon /> GitHub <span aria-hidden="true">↗</span>
       </a>
     </header>
     <main id="main">

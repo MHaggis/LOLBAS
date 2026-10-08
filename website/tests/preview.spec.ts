@@ -17,7 +17,9 @@ test('LOL-CI-001 hosted fork preview keeps navigation, assets and data under its
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto(`${base}/`);
   await expect(
-    page.getByRole('heading', { name: 'Hiding in plain sight.' }),
+    page.getByRole('heading', {
+      name: 'Living Off The Land Binaries, Scripts and Libraries',
+    }),
   ).toBeVisible();
   expect(
     await page

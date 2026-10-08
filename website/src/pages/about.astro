@@ -1,10 +1,19 @@
 ---
 import Base from '../layouts/Base.astro';
+// Maintainer names and handles are published in the project's README.
+const maintainers = [
+  { name: 'Oddvar Moe', handle: 'oddvarmoe' },
+  { name: 'Jimmy Bayne', handle: 'bohops' },
+  { name: 'Conor Richard', handle: 'xenosCR' },
+  { name: 'Chris “Lopi” Spehn', handle: 'ConsciousHacker' },
+  { name: 'Liam', handle: 'liamsomerville' },
+  { name: 'Wietze', handle: 'Wietze' },
+  { name: 'Jose Hernandez', handle: '_josehelps' },
+];
 ---
 
 <Base title="About the project · LOLBAS">
   <section class="page-head">
-    <p class="eyebrow">COMMUNITY RESEARCH. SHARED KNOWLEDGE.</p>
     <h1>
       Nothing to LOL about<span class="brand-dot">.</span>
     </h1>
@@ -14,6 +23,20 @@ import Base from '../layouts/Base.astro';
     </p>
   </section>
   <article class="article">
+    <section class="maintainers" aria-labelledby="maintainers-title">
+      <h2 id="maintainers-title">Project maintainers</h2>
+      <p>The people who keep LOLBAS moving. Find them on X.</p>
+      <ul class="maintainer-list">
+        {maintainers.map(({ name, handle }) => (
+          <li>
+            <a href={`https://x.com/${handle}`}>
+              <span>{name}</span>
+              <small>@{handle} ↗</small>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
     <h2>The goal</h2>
     <p>
       Document every Microsoft-signed binary, script, and library that can be
@@ -48,11 +71,7 @@ import Base from '../layouts/Base.astro';
       Matt Graeber at DerbyCon 3. LOLBAS grew from community research into a
       shared catalog maintained by volunteers.
     </p>
-    <p>
-      Project maintainers include Oddvar Moe, Jimmy Bayne, Conor Richard, Chris
-      “Lopi” Spehn, Liam, Wietze, and Jose Hernandez. The original project logos
-      were created by Adam Nadrowski.
-    </p>
+    <p>The original project logos were created by Adam Nadrowski.</p>
     <h2>Add your finding</h2>
     <p>
       Start with the{' '}

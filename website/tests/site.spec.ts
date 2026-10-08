@@ -183,6 +183,65 @@ test('LOL-SITE-001 mobile layout, keyboard access and clean runtime', async ({
   expect(errors).toEqual([]);
 });
 
+test('LOL-SITE-001 about button stays readable before hover and maintainers are linked first', async ({
+  page,
+}) => {
+  await page.goto('/about/');
+  const button = page.getByRole('link', { name: 'Explore the repository' });
+  await button.scrollIntoViewIfNeeded();
+  const contrast = () =>
+    button.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const luminance = (color: string) => {
+        const channels = color
+          .match(/[\d.]+/g)!
+          .slice(0, 3)
+          .map(Number)
+          .map((n) => {
+            const channel = n / 255;
+            return channel <= 0.04045
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+        return (
+          channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
+        );
+      };
+      const foreground = luminance(style.color),
+        background = luminance(style.backgroundColor);
+      return (
+        (Math.max(foreground, background) + 0.05) /
+        (Math.min(foreground, background) + 0.05)
+      );
+    });
+  expect(await contrast()).toBeGreaterThanOrEqual(4.5);
+  await button.hover();
+  expect(await contrast()).toBeGreaterThanOrEqual(4.5);
+  await expect(page.locator('.article h2').first()).toHaveText(
+    'Project maintainers',
+  );
+  await expect(page.locator('.maintainer-list a')).toHaveCount(7);
+  for (const handle of [
+    'oddvarmoe',
+    'bohops',
+    'xenosCR',
+    'ConsciousHacker',
+    'liamsomerville',
+    'Wietze',
+    '_josehelps',
+  ]) {
+    await expect(
+      page.getByRole('link', { name: new RegExp(`@${handle}`) }),
+    ).toHaveAttribute('href', `https://x.com/${handle}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+});
+
 test('LOL-SITE-001 visual evidence for catalog, detail and mobile', async ({
   page,
 }, testInfo) => {
@@ -217,9 +276,19 @@ test('LOL-SITE-001 visual evidence for catalog, detail and mobile', async ({
   ).toBeVisible();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   await capture('lolbas-detail');
+  await page.goto('/about/');
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await capture('lolbas-about');
+  await page
+    .getByRole('link', { name: 'Explore the repository' })
+    .scrollIntoViewIfNeeded();
+  await capture('lolbas-about-button');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await capture('lolbas-mobile');
+  await page.goto('/about/');
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await capture('lolbas-about-mobile');
 });
 
 test('LOL-SITE-002 styled filter menu supports pointer, keyboard and dismissal', async ({
